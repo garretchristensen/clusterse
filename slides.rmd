@@ -1,0 +1,38 @@
+---
+title: 'PracStats: Clustered Standard Errors'
+author: "Garret Christensen"
+date: "March 22, 2017"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Practical Stats: Clustered Standard Errors
+
+[Garret Christensen](http://www.ocf.berkeley.edu/~garret)*
+
+[BITSS](http://www.bitss.org)/[BIDS](http://bids.berkeley.edu)
+
+*I'm an economist
+
+## Outline
+
+* Nothing funny with your variance
+* Heteroskedastic--easy
+* Clusters--also easy
+
+
+## Slide with R Output
+
+```{r cars, echo = TRUE}
+summary(cars)
+```
+
+## Slide with Plot
+
+```{r pressure}
+plot(pressure)
+```
+
