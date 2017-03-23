@@ -74,6 +74,7 @@ This is a big problem.
 
 ## How to Deal
 
+What you'd normally think of:
 $$Y_{ig}=\beta_0+\beta_1 x_g+e_{ig}$$
 Regressor of interest (treatment status in a cluster-randomized RCT) varies only at the group level.
 
@@ -99,4 +100,114 @@ $$\frac{V_(\hat{\beta_1)}}{V_c(\hat{\beta_1)}}=1+(n-1)\rho_e$$
 
 C is for conventional. Not corrected, or clustered. Poor notation choices, Josh.
 
-This assumes nonstochastic regressors fixed at group level and groups of equal size, n.
+This assumes nonstochastic regressors fixed at group level and groups of equal size, n. The square root of this is called the Moulton Factor. Kind of like the *design effect* in the power calculation literature.
+
+## The Moulton Factor
+
+It's worse with higher $\rho_e$ because then every kid in a classroom is the same, and you're not getting any new information.
+
+It's worse with higher *n* (with fixed total sample size) because then you've got fewer, larger groups.
+
+## The Moulton Factor
+
+I lied. One more.
+
+It's a tiny bit more complicated when group size can vary, or when regressor of interest can vary within group. (e.g. you're more likely, but not guaranteed, to get treated in a certain county/state.)
+
+$$\frac{V_(\hat{\beta_1)}}{V_c(\hat{\beta_1)}}=1+[\frac{V(n_g)}{\overline{n}}+\overline{n}-1]\rho_x \rho_e$$
+
+$\rho_x$ is the intraclass correlation of $x_{ig}$.
+
+## How to implement
+
+1. Parametric: Fix conventional se's by inflating by Moulton Factor^2.
+2. Clustered standard errors*
+3. Use group averages and WLS with group size as weights.
+4. Block bootstrap.
+5. Some GLS/ML thing that sounds hard.
+
+2 is the only thing I've seen done, and is nearly universal in any panel/group data paper in econ written since ~2000.
+
+## This is not an equation
+
+Think of it as another sandwich.
+
+$$\hat{\Omega}_{cl}^2=(X'X)^{-1}(\sum_g X_g \hat{\Psi}_g X_g)(X'X)^{-1}$$
+Trident is a d.o.f adjustment and a matrix with lots of $e_g$'s in it. Kinda like a within-group correlation matrix, but apparently not.
+
+[[Link](http://fmwww.bc.edu/repec/usug2007/crse04.pdf)]
+
+It's neat because this doesn't have to follow the specific error structure we imagined earlier--it covers *arbitrary within-group correlation* as well as arbitrary heteroskedasticity.
+
+## How to really implement
+Tasty. Can I buy that in a can?
+
+![](./beer.jpg)
+
+Stata: Yes. reg y x, cluster(*clustervar*)
+
+## How to #Really implement
+
+`clusterSEs`: if you want bootstrapping
+
+I've got monthly, county data on the number of US soldiers killed in Iraq/Afghanistan and the number of recruits. 
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+library(car) 
+library(lmtest) 
+library(multiwayvcov) 
+library(foreign)
+d<-read.dta("./militarydata.dta")
+```
+
+```{r, echo=TRUE}
+# May need to remove missing before clustering 
+d2 = na.omit(d) 
+# Regular regression using lm() 
+#reg1 = lm(LNactive ~ L1monthcountydeath + countyunemp +factor(month)+factor(fips), data = d2) 
+# I want my fixed effects! Too many?
+```
+
+## Run the naive reg
+```{r, echo=TRUE}
+reg1 = lm(LNactive ~ L1monthcountydeath + countyunemp, data = d2)
+summary(reg1)
+```
+
+## Run the better reg
+```{r, echo=TRUE}
+# Cluster standard errors by county
+reg1$clse <-cluster.vcov(reg1, d2$fips) 
+coeftest(reg1, reg1$clse) 
+```
+SE's are twice as big if you cluster by county.
+
+## Blogs by better #RStats-isticians
+
+[This guy's holding a machete](https://thetarzan.wordpress.com/2011/06/11/clustered-standard-errors-in-r/).
+
+[R for Public Health](http://rforpublichealth.blogspot.com/2014/10/easy-clustered-standard-errors-in-r.html)
+
+[Another one](https://cran.r-project.org/web/packages/clubSandwich/vignettes/panel-data-CRVE.html)
+
+[One more](http://www.richard-bluhm.com/clustered-ses-in-r-and-stata-2/)
+
+## Harder Stuff
+
+Stuff could be grouped in multiple ways. If it's nested, you're cool, just use the big one. If not, $\Omega$ generalizes to multiple groupings.
+
+If you've got few groups, you might want to use a *t*-test with #groups-1 d.o.f. instead of a Z. (i.e. make it harder to reject).
+
+## Moral of the Story
+
+Just like you're testing for heteroskedasticity (or like economists, just assuming you have it), you should really be adjusting your standard errors if you're using micro observations with some sort of grouped regressor of interest.
+
+I hope you have a lot of groups. 50 states is fine. (But you might consider )
+
+You may have serial correlation, too. That's Somebody Else's Problem.
+
+## Resources
+
+[Colin Cameron and Douglas Miller's practitioner's guide](http://cameron.econ.ucdavis.edu/research/Cameron_Miller_JHR_2015_February.pdf)
+
+[Bertrand, Duflo, & Mullainathan's 'How Much Should We Trust Diff-in-Diff Estimates'](http://www.jstor.org/stable/25098683) has been cited 6,000 times and says you're seriously wrong if you're doing a diff-in-diff without some type of correction.
