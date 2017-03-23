@@ -2,7 +2,9 @@
 title: 'PracStats: Clustered Standard Errors'
 author: "Garret Christensen"
 date: "March 22, 2017"
-output: ioslides_presentation
+output:
+  ioslides_presentation: default
+  beamer_presentation: default
 ---
 
 ```{r setup, include=FALSE}
@@ -24,15 +26,77 @@ knitr::opts_chunk$set(echo = FALSE)
 * Clusters--also easy
 
 
-## Slide with R Output
+## Nothing funny 
 
-```{r cars, echo = TRUE}
-summary(cars)
-```
+Gauss-Markov assumptions met.
 
-## Slide with Plot
+Including: the variance of the error term doesn't depend on the X.
 
-```{r pressure}
-plot(pressure)
-```
+Easy to estimate variance: $\hat{V}[\hat{\beta}]= s^2(X'X)^{-1}, s^2=\frac{\sum_i \hat{u}_{i}^2}{n-k}$
 
+Unlikely the case in real (economic) data---variance probably positively correlated with income.
+
+
+## Heteroskedasticity
+
+Huber-Eicker-White say make a consistent sandwich instead.
+
+$\hat{V_{HCE}}[\hat{\beta}]=(X'X)^-1(X'\Sigma X)(X'X)^-1, \Sigma=diag(\hat{u}_i^2)$
+
+Easy fix, and not a huge problem in practice anyway. (25%)
+
+## Clustering
+Are your observations really independent?
+
+\pause
+No, really. Are they? I bet they're grouped somehow.
+
+\pause
+Do you have individual-level observations, and then some aggregate policy variable (county, state, industry, occupation, etc.)?
+
+\pause
+Did you randomize at the school/village level?
+
+\pause
+Are you the Tennnessee STAR project?
+
+\pause
+This is a big problem.
+
+
+## Cites
+
+[Moulton 1986, Journal of Econometrics](http://www.sciencedirect.com/science/article/pii/0304407686900217) 
+
+[Moulton 1990, REStat](http://www.jstor.org/stable/2109724) (5 pages, nice applied example)
+
+[Angrist & Pischke, Mostly Harmless Econometrics](http://oskicat.berkeley.edu/record=b18584716?)
+
+## How to Deal
+
+$$Y_{ig}=\beta_0+\beta_1 x_g+e_{ig}$$
+Regressor of interest (treatment status in a cluster-randomized RCT) varies only at the group level.
+
+$$E[e_{ig}e_{jg}]=\rho_e \sigma_e^2>0$$
+Kids in the same classroom share a lot of the same stuff.
+
+$$e_{ig}=\nu_g +\eta_{ig}$$
+The classroom gets its own component and the kid has mean-zero left over.
+
+## Angrist, Hamming it Up
+
+The intraclass correlation coefficient becomes:
+
+$$\rho_e=\frac{\sigma_{\nu}^2}{\sigma_{\nu}^2+\sigma_{\eta}^2}$$
+
+"$\rho_e$ is called the *intraclass correlation coefficient* even when the groups of interest are not classrooms."
+
+## The Moulton Factor
+
+Last equation, I promise.
+
+$$\frac{V_(\hat{\beta_1)}}{V_c(\hat{\beta_1)}}=1+(n-1)\rho_e$$
+
+C is for conventional. Not corrected, or clustered. Poor notation choices, Josh.
+
+This assumes nonstochastic regressors fixed at group level and groups of equal size, n.
